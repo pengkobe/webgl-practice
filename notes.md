@@ -1,6 +1,6 @@
 ### 着色器程序的创建
 流程实在复杂，做点笔记
-```
+```javascript
 // 添加DOM节点
 <canvas id="canvas" />
 
@@ -34,7 +34,7 @@ webgl.attachShader(program,fs);
 webgl.linkProgram(program);
 ```
 ### 着色器程序的使用(绘图)
-```
+```javascript
 //把程序放入显存中
 webgl.useProgram(program);
 //定义一个顶点数组，这这里有三个坐标
