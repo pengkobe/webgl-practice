@@ -1,2 +1,2 @@
-# webgl-pratice
+# webgl-practice
 to learn &amp; to sumarize
