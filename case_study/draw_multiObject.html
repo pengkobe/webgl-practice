@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>绘制多对象-web-tinker</title>
+    <script src="./SimpleWebGL.2.0.js"></script>
+    <script src="./SimpleWebGL.Matrix.1.0.js"></script>
+    <style>
+        * {
+            padding: 0px;
+            margin: 0px;
+        }
+        html {
+            height: 100%;
+            display: table;
+            background: #000;
+            overflow: hidden;
+        }
+        body {
+            display: table-cell;
+            vertical-align: middle;
+        }
+        canvas {
+            vertical-align: middle;
+        }
+    </style>
+</head>
+
+<body>
+    <!--原文地址 https://www.web-tinker.com/article/20165.html -->
+    <canvas id="canvas" width="400" height="400"></canvas>
+    <script id="vs_s" type="text/plain">
+        attribute vec3 po;
+        attribute vec3 co;
+        uniform mat4 pro;
+        uniform mat4 tra; //变换矩阵，包含旋转和平移
+        varying vec3 co_v;
+        void main(){
+        co_v=co;
+        gl_Position=pro*tra*vec4(po,1.0);
+        }
+    </script>
+    <script id="fs_s" type="text/plain">
+        varying lowp vec3 co_v;
+        void main(){
+        gl_FragColor=vec4(co_v,1.0);
+        }
+    </script>
+    <script>
+        //准备
+        var webgl,program,vs,fs,i,j,dat,tmp,buf;
+        webgl=canvas.getContext("experimental-webgl");
+
+        //着色器相关
+        program=webgl.createProgram();
+        vs=webgl.createShader(webgl.VERTEX_SHADER);
+        fs=webgl.createShader(webgl.FRAGMENT_SHADER);
+        webgl.shaderSource(vs,vs_s.textContent);
+        webgl.shaderSource(fs,fs_s.textContent);
+        webgl.compileShader(vs);
+        webgl.compileShader(fs);
+        webgl.attachShader(program,vs);
+        webgl.attachShader(program,fs);
+        webgl.linkProgram(program);
+        webgl.useProgram(program);
+
+        //顶点属性相关
+        var po,co;
+        po=webgl.getAttribLocation(program,"po");
+        co=webgl.getAttribLocation(program,"co");
+        webgl.enableVertexAttribArray(po);
+        webgl.enableVertexAttribArray(co);
+        buf=webgl.createBuffer();
+        webgl.bindBuffer(webgl.ARRAY_BUFFER,buf);
+        webgl.bufferData(webgl.ARRAY_BUFFER,new Float32Array([
+        -1,-1,-1, 1,-1,-1, -1,1,-1, 1,1,-1,
+        -1,-1,1, 1,-1,1, -1,1,1, 1,1,1,
+        -1,-1,-1, -1,1,-1, -1,-1,1, -1,1,1,
+        1,-1,-1, 1,1,-1, 1,-1,1, 1,1,1,
+        -1,-1,-1, 1,-1,-1, -1,-1,1, 1,-1,1,
+        -1,1,-1, 1,1,-1, -1,1,1, 1,1,1
+        ]),webgl.STATIC_DRAW);
+        webgl.vertexAttribPointer(po,3,webgl.FLOAT,false,0,0);
+        buf=webgl.createBuffer();
+        tmp=[[1,0,0],[0,1,0],[0,0,1],[1,1,0],[1,0,1],[0,1,1]];
+        for(dat=[],i=0;i<6;i++)for(j=0;j<4;j++)dat.push.apply(dat,tmp[i]);
+        webgl.bindBuffer(webgl.ARRAY_BUFFER,buf);
+        webgl.bufferData(
+        webgl.ARRAY_BUFFER,new Float32Array(dat),webgl.STATIC_DRAW
+        );
+        webgl.vertexAttribPointer(co,3,webgl.FLOAT,false,0,0);
+
+        //全局属性相关
+        var pro,mov,rot;
+        pro=webgl.getUniformLocation(program,"pro");
+        tra=webgl.getUniformLocation(program,"tra");
+        webgl.uniformMatrix4fv(pro,false,[
+        1,0,0,0, 0,1,0,0, 0,0,-1,-1, 0,0,-2,0, 
+        ]);
+
+        //绘制相关
+        dat=[];
+        for(i=0;i<24;i+=4)dat.push(i,i+1,i+2,i+2,i+1,i+3);
+        buf=webgl.createBuffer();
+        webgl.bindBuffer(webgl.ELEMENT_ARRAY_BUFFER,buf);
+        webgl.bufferData(
+        webgl.ELEMENT_ARRAY_BUFFER,new Uint16Array(dat),webgl.STATIC_DRAW
+        );
+        webgl.enable(webgl.DEPTH_TEST);
+        var a=0;
+        setInterval(function(){
+            //计算旋转参数
+            var s=Math.sin(a),c=Math.cos(a),i,j;
+            a+=0.02;
+            //二重循环绘制多个元素
+            for(i=-2;i<=2;i++)for(j=-2;j<=2;j++){
+                //更具循环变量和旋转参数构造变化矩阵（平移·旋转）
+                webgl.uniformMatrix4fv(tra,false,[
+                c*c,-s,s*c,0, s*c,c,s*s,0, -s,0,c,0, i*5,j*5,-14,1
+                ]);
+                //绘制
+                webgl.drawElements(webgl.TRIANGLES,36,webgl.UNSIGNED_SHORT,0);
+            };
+        },16);
+    </script>
+
+</body>
+
+</html>
