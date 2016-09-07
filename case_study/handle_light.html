@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>基本光处理</title>
+</head>
+
+<body>
+<!-- 原文:https://www.web-tinker.com/article/20166.html -->
+<canvas id="canvas" width="400" height="400"></canvas>
+<script id="vs_s" type="text/plain">
+//顶点着色器
+attribute vec3 po;
+attribute vec3 co;
+attribute vec3 no; //顶点的法向量
+uniform mat4 tra;
+uniform mat4 pro;
+uniform vec3 li_co; //平行光颜色
+uniform vec3 li_di; //平行光方向
+uniform vec3 li_en; //环境光颜色
+varying vec3 co_v;
+void main(){
+  gl_Position=pro*tra*vec4(po,1.0);
+  vec3 no_di=(tra*vec4(no,0.0)).xyz; //把顶点旋转应用到法线上
+  float li_we=max(-dot(li_di,no_di),0.0); //计算法线与光线的点积
+  vec3 li=li_we*li_co; //应用光的颜色
+  co_v=co*li+li_en; //物体的颜和平行光的颜色混合，再叠加上环境光
+}
+</script>
+<script id="fs_s" type="text/plain">
+//片段着色器
+varying lowp vec3 co_v;
+void main(){
+  gl_FragColor=vec4(co_v,1.0);
+}
+</script>
+<script>
+//准备
+var webgl,program,vs,fs,dat,tmp,i,j;
+webgl=canvas.getContext("experimental-webgl");
+program=webgl.createProgram();
+vs=webgl.createShader(webgl.VERTEX_SHADER);
+fs=webgl.createShader(webgl.FRAGMENT_SHADER);
+webgl.shaderSource(vs,vs_s.textContent);
+webgl.shaderSource(fs,fs_s.textContent);
+webgl.compileShader(vs);
+webgl.compileShader(fs);
+webgl.attachShader(program,vs);
+webgl.attachShader(program,fs);
+webgl.linkProgram(program);
+webgl.useProgram(program);
+
+//顶点属性相关
+var po,co,no;
+po=webgl.getAttribLocation(program,"po");
+co=webgl.getAttribLocation(program,"co");
+no=webgl.getAttribLocation(program,"no");
+webgl.enableVertexAttribArray(po);
+webgl.enableVertexAttribArray(co);
+webgl.enableVertexAttribArray(no);
+webgl.bindBuffer(webgl.ARRAY_BUFFER,webgl.createBuffer());
+webgl.bufferData(
+  webgl.ARRAY_BUFFER,new Float32Array([
+    -1,-1,-1, 1,-1,-1, -1,1,-1, 1,1,-1,
+    -1,-1,1, 1,-1,1, -1,1,1, 1,1,1,
+    -1,-1,-1, -1,1,-1, -1,-1,1, -1,1,1,
+    1,-1,-1, 1,1,-1, 1,-1,1, 1,1,1,
+    -1,-1,-1, 1,-1,-1, -1,-1,1, 1,-1,1,
+    -1,1,-1, 1,1,-1, -1,1,1, 1,1,1
+  ]),webgl.STATIC_DRAW
+);
+webgl.vertexAttribPointer(po,3,webgl.FLOAT,false,0,0);
+tmp=[[1,0,0],[0,1,0],[0,0,1],[1,1,0],[1,0,1],[0,1,1]];
+for(dat=[],i=0;i<tmp.length;i++)
+  for(j=0;j<4;j++)dat.push.apply(dat,tmp[i]);
+webgl.bindBuffer(webgl.ARRAY_BUFFER,webgl.createBuffer());
+webgl.bufferData(
+  webgl.ARRAY_BUFFER,new Float32Array(dat),webgl.STATIC_DRAW
+);
+webgl.vertexAttribPointer(co,3,webgl.FLOAT,false,0,0);
+tmp=[[0,0,-1],[0,0,1],[-1,0,0],[1,0,0],[0,-1,0],[0,1,0]];
+for(dat=[],i=0;i<tmp.length;i++)
+  for(j=0;j<4;j++)dat.push.apply(dat,tmp[i]);
+webgl.bindBuffer(webgl.ARRAY_BUFFER,webgl.createBuffer());
+webgl.bufferData(
+  webgl.ARRAY_BUFFER,new Float32Array(dat),webgl.STATIC_DRAW
+);
+webgl.vertexAttribPointer(no,3,webgl.FLOAT,false,0,0);
+
+//全局属性相关
+var tra,pro,li_co,li_di,li_en;
+tra=webgl.getUniformLocation(program,"tra");
+pro=webgl.getUniformLocation(program,"pro");
+li_co=webgl.getUniformLocation(program,"li_co");
+li_di=webgl.getUniformLocation(program,"li_di");
+li_en=webgl.getUniformLocation(program,"li_en");
+webgl.uniformMatrix4fv(pro,false,[
+  1,0,0,0, 0,1,0,0, 0,0,-1,-1, 0,0,-2,0
+]);
+webgl.uniform3fv(li_co,[0.8,0.8,0.8]);
+webgl.uniform3fv(li_di,[0,0,-1]);
+webgl.uniform3fv(li_en,[0.2,0.2,0.2]);
+
+//绘制相关
+for(dat=[],i=0;i<24;i+=4)dat.push(i,i+1,i+2,i+3,i+2,i+1);
+webgl.bindBuffer(webgl.ELEMENT_ARRAY_BUFFER,webgl.createBuffer());
+webgl.bufferData(
+  webgl.ELEMENT_ARRAY_BUFFER,
+  new Uint16Array(dat),
+  webgl.STATIC_DRAW
+);
+webgl.enable(webgl.DEPTH_TEST);
+var a=0;
+setInterval(function(){
+  var s=Math.sin(a),c=Math.cos(a);a+=0.02;
+  webgl.uniformMatrix4fv(tra,false,[
+    c*c,-s,s*c,0, s*c,c,s*s,0, -s,0,c,0, 0,0,-5,1
+  ]);
+  webgl.drawElements(webgl.TRIANGLES,36,webgl.UNSIGNED_SHORT,0);
+},16);
+</script>
+</body>
+
+</html>
