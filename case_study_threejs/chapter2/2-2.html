@@ -29,6 +29,7 @@
 
             var camera;
             function initCamera() {
+                /** 相机位于y轴上，可沿x轴、z轴移动形成矩阵 */
                 camera = new THREE.PerspectiveCamera(45, width / height, 1, 10000);
                 camera.position.x = 0;
                 camera.position.y = 1000;
