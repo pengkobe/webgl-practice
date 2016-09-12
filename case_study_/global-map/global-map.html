@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+<meta charset="UTF-8">
+<title>Hello world!</title>
+<link rel="stylesheet" href="reset.css"></link>
+<style>
+body{
+    overflow: hidden;
+}
+.canvas{
+    width: 100%;
+    height: 100%;
+    background-color: #000;
+}
+</style>
+</head>
+<body>
+    <!-- 原文地址 http://imweb.io/topic/560b9d93c2317a8c3e086230-->
+    <div id="canvas" class="canvas"></div>
+
+    <script src="../../case_study_threejs/lib/Three.js"></script>
+    <script src="global-map.js"></script>
+    <script>
+        (function(){
+            var myWorld = new World("canvas");
+            myWorld.build();
+            myWorld.rotate(myWorld);
+        })();
+    </script>
+
+</body>
+</html>
