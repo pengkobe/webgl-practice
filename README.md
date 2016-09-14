@@ -2,7 +2,9 @@
 to learn &amp; sumarize
 
 ### reference
-* https://github.com/Ovilia/ThreeExample.js  
+* <<ThreeJS入门指南>>
+  网址:https://read.douban.com/reader/ebook/7412854/  
+  源码:https://github.com/Ovilia/ThreeExample.js   
   一个上交才女读书期间写的，网红，估计你认识她！
 * http://www.hewebgl.com/  
   中高级文章/视频需要付费才看，不过人家这么辛苦，现在资料又这么稀缺，可以付点钱看看撒！
