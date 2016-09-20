@@ -1,8 +1,7 @@
 ## threejs学习笔记
-本人主要按照
-1. webgl中文网(http://www.hewebgl.com/)
-2. ThreeJS入门指南(https://read.douban.com/reader/ebook/7412854/)
-免费教程来进行学习。
+本人主要按照\<\<ThreeJS入门指南\>\>(免费)来进行学习。   
+网址: https://read.douban.com/reader/ebook/7412854/
+
 
 ### threejs
 代码量显著减少是其最明显的一个特征，如绘制三角形代码只有区区30行，而原生webgl代码达到5倍多
@@ -115,7 +114,7 @@ Objects（物体）
     Bone
     Line
     LOD
-    Mesh（网格，最常用的物体）
+    Mesh（网格，最常用的物体,参数:geometry, material）
     MorphAnimMesh
     Particle
     ParticleSystem
@@ -234,4 +233,118 @@ scene.add(cube);
 ```
 
 
-### 止于88页
+### 材质加载
+```javascript
+// 模型不含材质
+var loader = new THREE.OBJLoader();
+loader.load('../lib/port.obj', function(obj) {
+    obj.traverse(function(child) {
+        if (child instanceof THREE.Mesh) {
+            // 开启双面绘制
+            child.material.side = THREE.DoubleSide;
+        }
+    });
+
+    mesh = obj;
+    scene.add(obj);
+}); 
+
+// 模型含材质
+var loader = new THREE.OBJLoader();
+loader.load('../lib/port.obj', function(obj) {
+    obj.traverse(function(child) {
+        if (child instanceof THREE.Mesh) {
+            child.material = new THREE.MeshLambertMaterial({
+                color: 0xffff00,
+                side: THREE.DoubleSide
+            });
+        }
+    });
+
+    mesh = obj;
+    scene.add(obj);
+}); 
+
+//建模软件中设置材质
+var loader = new THREE.OBJMTLLoader();
+loader.addEventListener('load', function(event) {
+    var obj = event.content;
+    mesh = obj;
+    scene.add(obj);
+});
+loader.load('../lib/port.obj', '../lib/port.mtl'); 
+```
+
+### 光源
+```javascript
+// 环境光
+THREE.AmbientLight(hex) 
+
+// 点光源
+THREE.PointLight(hex, intensity, distance) 
+
+// 平行光
+new THREE.DirectionalLight();
+
+// 聚光灯(hex, intensity, distance, angle, exponent)
+var light = new THREE.SpotLight(0xffff00, 1, 100, Math.PI / 6, 25);
+
+```
+
+### 阴影
+能形成阴影的光源只有THREE.DirectionalLight与THREE.SpotLight  
+能表现阴影效果的材质只有THREE.LambertMaterial与THREE.PhongMaterial   
+
+```javascript
+// 告诉渲染器渲染阴影
+renderer.shadowMapEnabled = true;
+
+// 光源以及所有要产生阴影的物体调用
+obj.castShadow = true; 
+
+// 接收阴影的物体调用
+obj.receiveShadow = true; 
+
+// 调试时看到阴影相机
+light.shadowCameraVisible = true; 
+```    
+
+阴影完整代码演示
+  
+```javascript
+renderer = new THREE.WebGLRenderer();
+renderer.shadowMapEnabled = true;
+renderer.shadowMapSoft = true;
+
+var plane = new THREE.Mesh(new THREE.PlaneGeometry(8, 8, 16, 16),
+        new THREE.MeshLambertMaterial({color: 0xcccccc}));
+plane.rotation.x = -Math.PI / 2;
+plane.position.y = -1;
+plane.receiveShadow = true;
+scene.add(plane);
+
+cube = new THREE.Mesh(new THREE.CubeGeometry(1, 1, 1),
+        new THREE.MeshLambertMaterial({color: 0x00ff00}));
+cube.position.x = 2;
+cube.castShadow = true;
+scene.add(cube);
+
+var light = new THREE.SpotLight(0xffff00, 1, 100, Math.PI / 6, 25);
+light.position.set(2, 5, 3);
+light.target = cube;
+light.castShadow = true;
+
+// 聚光灯必须设置以下三值
+light.shadowCameraNear = 2;
+light.shadowCameraFar = 10;
+light.shadowCameraFov = 30;
+light.shadowCameraVisible = true;
+
+light.shadowMapWidth = 1024;
+light.shadowMapHeight = 1024;
+light.shadowDarkness = 0.3;
+
+scene.add(light); 
+```
+
+### 着色器(130页)
