@@ -1,5 +1,5 @@
 ## threejs学习笔记
-本人主要按照\<\<ThreeJS入门指南\>\>(免费)来进行学习。   
+本人主要按照\<\<ThreeJS入门指南\>\>(免费)来进行学习。
 网址: https://read.douban.com/reader/ebook/7412854/
 
 
@@ -35,7 +35,7 @@ triGeo.faces.push(new THREE.Face3(0, 2, 1));
 var triangle = new THREE.Mesh(triGeo, material);
 scene.add(triangle);
 
-renderer.render(scene, camera); 
+renderer.render(scene, camera);
 ```
 
 ### threejs功能预览
@@ -198,7 +198,7 @@ Extras / Helpers
     HemisphereLightHelper
     PointLightHelper
     SpotLightHelper
-    
+
 Extras / Objects
     ImmediateRenderObject
     LensFlare
@@ -212,7 +212,7 @@ Extras / Renderers / Plugins
 
 Extras / Shaders
     ShaderFlares
-    ShaderSprite 
+    ShaderSprite
 ```
 
 ### 六张图像应用于长方形
@@ -229,7 +229,7 @@ for (var i = 0; i < 6; ++i) {
 }
 var cube = new THREE.Mesh(new THREE.CubeGeometry(5, 5, 5),
         new THREE.MeshFaceMaterial(materials));
-scene.add(cube); 
+scene.add(cube);
 ```
 
 
@@ -247,7 +247,7 @@ loader.load('../lib/port.obj', function(obj) {
 
     mesh = obj;
     scene.add(obj);
-}); 
+});
 
 // 模型含材质
 var loader = new THREE.OBJLoader();
@@ -263,7 +263,7 @@ loader.load('../lib/port.obj', function(obj) {
 
     mesh = obj;
     scene.add(obj);
-}); 
+});
 
 //建模软件中设置材质
 var loader = new THREE.OBJMTLLoader();
@@ -272,16 +272,16 @@ loader.addEventListener('load', function(event) {
     mesh = obj;
     scene.add(obj);
 });
-loader.load('../lib/port.obj', '../lib/port.mtl'); 
+loader.load('../lib/port.obj', '../lib/port.mtl');
 ```
 
 ### 光源
 ```javascript
 // 环境光
-THREE.AmbientLight(hex) 
+THREE.AmbientLight(hex)
 
 // 点光源
-THREE.PointLight(hex, intensity, distance) 
+THREE.PointLight(hex, intensity, distance)
 
 // 平行光
 new THREE.DirectionalLight();
@@ -292,25 +292,25 @@ var light = new THREE.SpotLight(0xffff00, 1, 100, Math.PI / 6, 25);
 ```
 
 ### 阴影
-能形成阴影的光源只有THREE.DirectionalLight与THREE.SpotLight  
-能表现阴影效果的材质只有THREE.LambertMaterial与THREE.PhongMaterial   
+能形成阴影的光源只有THREE.DirectionalLight与THREE.SpotLight
+能表现阴影效果的材质只有THREE.LambertMaterial与THREE.PhongMaterial
 
 ```javascript
 // 告诉渲染器渲染阴影
 renderer.shadowMapEnabled = true;
 
 // 光源以及所有要产生阴影的物体调用
-obj.castShadow = true; 
+obj.castShadow = true;
 
 // 接收阴影的物体调用
-obj.receiveShadow = true; 
+obj.receiveShadow = true;
 
 // 调试时看到阴影相机
-light.shadowCameraVisible = true; 
-```    
+light.shadowCameraVisible = true;
+```
 
 阴影完整代码演示
-  
+
 ```javascript
 renderer = new THREE.WebGLRenderer();
 renderer.shadowMapEnabled = true;
@@ -344,7 +344,118 @@ light.shadowMapWidth = 1024;
 light.shadowMapHeight = 1024;
 light.shadowDarkness = 0.3;
 
-scene.add(light); 
+scene.add(light);
 ```
 
-### 着色器(130页)
+### 着色器
+使用着色器可以更加灵活地控制渲染效果，结合纹理，可以进行多次渲染，达到更加强大的效果
+#### 着色器种类
+1. 几何着色器(Geometry Shader,webgl基于OpenGL ES2.0，不支持该类型)
+2. 顶点着色器(Veretx Shader)
+   顶点着色器只调用一次，可以修改顶点位置与颜色传入片元着色器
+3. 片元着色器(Fragment Shader)
+   形成像素之前的数据，每个片元会调用一次，适合做图像后处理
+
+#### 限定符
+如果不写以下限定符，那么只能在当前文件可访问
+1. const：常量
+2. attribute:js代码传递到顶点着色器中，每个顶点对应不同的值
+3. uniform:每个顶点/片元对应相同的值
+4. varying: 从顶点着色器传递到片元着色器
+
+看看着色器代码
+
+```javascipt
+// 申明一个叫vUV的变量，类型是vec2，为了将顶点着色器信息传递到片元着色器
+varying vec2 vUv;
+
+void main()
+{
+    /*
+    * uv是threejs传进来代表UV映射时的横纵坐标
+    * uv映射:将每个面片贴的图统一映射到一张纹理上,记录每个面片贴图在纹理上对应的位置
+    */
+    vUv = uv;
+    /*
+    * 计算三维模型在二维显示屏上的坐标
+    * position是顶点在物体坐标系（而不是世界坐标系）中的位置
+    */
+    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+}
+
+varying vec2 vUv;
+void main() {
+    /*
+    * vec4的四个维度分别表示红、绿、蓝以及alpha通道。
+    * 因此，这里我们是将vUv的两个维度分别对应到红绿通道
+    */
+    gl_FragColor = vec4(vUv.x, vUv.y, 1.0, 1.0);
+}
+```
+
+
+#### 着色器完整实例
+```javascript
+// 异步加载着色器代码
+$.get('shader/my.vs', function(vShader){
+    $.get('shader/my.fs', function(fShader){
+         material = new THREE.ShaderMaterial({
+            vertexShader: vShader,
+            fragementShader: fShader
+        });
+    });
+});
+
+// HTML中加载
+// <script id="vs" type="x-shader/x-vertex">
+//     这里的内容相当于.vs文件中的内容
+// </script>
+// <script id="fs" type="x-shader/x-fragment">
+//    这里的内容相当于.fs文件中的内容
+// </script>
+material = new THREE.ShaderMaterial({
+    vertexShader: document.getElementById('vs').textContent,
+    fragmentShader: document.getElementById('fs').textContent
+});
+
+// 程序
+var scene = null;
+var camera = null;
+var renderer = null;
+var cube = null;
+
+function init() {
+    renderer = new THREE.WebGLRenderer({
+        canvas: document.getElementById('mainCanvas')
+    });
+    scene = new THREE.Scene();
+
+    camera = new THREE.OrthographicCamera(-5, 5, 3.75, -3.75, 0.1, 100);
+    camera.position.set(5, 15, 25);
+    camera.lookAt(new THREE.Vector3(0, 0, 0));
+    scene.add(camera);
+
+    var light = new THREE.DirectionalLight();
+    light.position.set(3, 2, 5);
+    scene.add(light);
+
+    cube = new THREE.Mesh(new THREE.CubeGeometry(2, 2, 2),
+            new THREE.MeshLambertMaterial({color: 0x00ff00}));
+    scene.add(cube);
+
+    draw();
+}
+
+function draw() {
+    cube.rotation.y += 0.01;
+    if (cube.rotation.y > Math.PI * 2) {
+        cube.rotation.y -= Math.PI * 2;
+    }
+
+    renderer.render(scene, camera);
+
+    requestAnimationFrame(draw);
+}
+```
+
+
